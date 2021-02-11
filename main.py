@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 import csv
 import math
+from datetime import timedelta, datetime
 
 def config_pars():
     file = 'config.ini'
@@ -18,7 +19,8 @@ def config_pars():
                   'count_order_intime':int(config["Count"]["count_order_intime"]),
                   'status_new': config["Status"]["New"], 'status_inProcess': config["Status"]["InProcess"],
                   'status_Fill': config["Status"]["StatusFill"].split(","), 'status_done': config["Status"]["Done"],'dictionary_instrument': dictionary_instrument,
-                  'Side': config["Side"]["Options"].split(","), 'Max_volum': int(config["Volume"]["Max_volum"]), 'Min_volum': int(config["Volume"]["Min_volum"])}
+                  'Side': config["Side"]["Options"].split(","), 'Max_volum': int(config["Volume"]["Max_volum"]), 'Min_volum': int(config["Volume"]["Min_volum"]),
+                  'Date': config["Date"]["Date"], 'Note': config["Note"]["Notes"].split(","), 'Tag': config["Tag"]["Tags"].split(",")}
 
 
     return config_dic
@@ -202,12 +204,68 @@ def volum_fill(low_random_orders, volum_init_order, volum_init_min, status_num_r
                 fill_volum_records.append(partial_fill_volum[num])
             elif fill_status_num[num] == 2:
                 fill_volum_records.append(0)
-
         num+=1
-    print(fill_volum_records)
-    print(len(fill_volum_records))
-    print(status_num_record)
+
     return fill_volum_records
+
+
+def date(low_random_orders, record_row, status_num_record, date, low_random_records):
+    sec_for_new =[]
+    sec_for_inProcess =[]
+    sec_for_fill =[]
+    sec_for_done = []
+    date_for_record =[]
+    date_sec_for_tag = []
+    msec_for_record= []
+    date_init = datetime.strptime(date, "%d.%m.%y %H:%M:%S.%f")
+    for num in range(len(low_random_orders)):
+        sec_for_new.append(int((3000 - 1)*low_random_orders[num] + 1))
+        sec_for_inProcess.append(int(((1000 + sec_for_new[num])-1)*low_random_orders[num] + sec_for_new[num] + 1))
+        sec_for_fill.append(int(((1000 + sec_for_inProcess[num])-1)*low_random_orders[num] + sec_for_inProcess[num] + 1))
+        sec_for_done.append(int(((1000 + sec_for_fill[num])-1)*low_random_orders[num] + sec_for_fill[num] + 1))
+    for num in range(len(low_random_records)):
+        msec_for_record.append((int((3000 - 1)*low_random_records[num] + 1)))
+    sec_for_new_record = get_transform_to_record(record_row,sec_for_new)
+    sec_for_inProcess_record = get_transform_to_record(record_row,sec_for_inProcess)
+    sec_for_fill_record = get_transform_to_record(record_row,sec_for_fill)
+    sec_for_done_record = get_transform_to_record(record_row,sec_for_done)
+    date_sec_for_tag.append(sec_for_new)
+    date_sec_for_tag.append(sec_for_inProcess)
+    date_sec_for_tag.append(sec_for_fill)
+    date_sec_for_tag.append(sec_for_done)
+    for num in range(len(low_random_records)):
+        if status_num_record[num] == 1:
+            date_for_record.append(date_init+timedelta(seconds=sec_for_new_record[num],microseconds=msec_for_record[num]))
+        elif status_num_record[num] == 2:
+            date_for_record.append(date_init + timedelta(seconds=sec_for_inProcess_record[num],microseconds=msec_for_record[num]))
+        elif status_num_record[num] == 3:
+            date_for_record.append(date_init + timedelta(seconds=sec_for_fill_record[num],microseconds=msec_for_record[num]))
+        else:  date_for_record.append(date_init+timedelta(seconds=sec_for_done_record[num], microseconds=msec_for_record[num]))
+
+    return date_for_record, date_sec_for_tag
+
+def tag(lis_tag, date_sec_for_tag, record_row):
+    tag_for_order = []
+
+    for num in range(len(date_sec_for_tag[0])):
+        tmp = ""
+        for num_list in range(4):
+            tmp += (lis_tag[int(str(date_sec_for_tag[num_list][num])[len(str(date_sec_for_tag[num_list][num]))-1:])])
+        tag_for_order.append(tmp)
+
+    return get_transform_to_record(record_row,tag_for_order)
+
+
+def note(list_note, date_sec_for_note, record_row):
+    note_for_order = []
+    first_digit = 1
+    for num in range(len(date_sec_for_note[0])):
+        tmp = ""
+        for num_list in range(4):
+            tmp += list_note[int(str(date_sec_for_note[num_list][num])[:first_digit])]
+        note_for_order.append(tmp)
+
+    return get_transform_to_record(record_row,note_for_order)
 
 if __name__ == '__main__':
 
@@ -228,26 +286,19 @@ if __name__ == '__main__':
 
     side_status = side(config['Side'],record_row)
 
-    volun_init_record, volum_init_for_order = volum_init(config["Max_volum"],config["Min_volum"], get_low_random(psevdo_random(serial_num_order,106,1283,6075), 6075), record_row)
+    volum_init_record, volum_init_for_order = volum_init(config["Max_volum"],config["Min_volum"], get_low_random(psevdo_random(serial_num_order,106,1283,6075), 6075), record_row)
 
-    volum_fill(low_random_orders,volum_init_for_order, config["Min_volum"], status_num_record, fill_status_num, volun_init_record, record_row)
+    volum_fill_record = volum_fill(low_random_orders,volum_init_for_order, config["Min_volum"], status_num_record, fill_status_num, volum_init_record, record_row)
 
-    # with open("Table.csv","w") as f:
-    #     writer  = csv.writer(f, delimiter = '\t')
-    #     writer.writerow(('Serial number of record','ID','Instrument','Prize', 'Px_fill', 'Side' ,'Status'))
-    #     for i in zip(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status,status_order):
-    #         writer.writerow(i)
+    date_records,date_sec_for_TagNote = date(low_random_orders,record_row, status_num_record, config["Date"], low_random_records)
 
-    # for num in range(len(partial_fill_volum)):
-    #     if status_num_record == 1 or status_num_record == 2:
-    #         fill_volum_records.append(0)
-    #     else:
-    #         if fill_status_num == 0:
-    #             fill_volum_records.append(volum_for_record[num])
-    #         elif fill_status_num == 1:
-    #             fill_volum_records.append(partial_fill_volum[num])
-    #         elif fill_status_num == 2:
-    #             fill_volum_records.append(0)
-    #         else:
-    #             fill_volum_records.append(fill_volum_records[num - 1])
-    # print(fill_volum_records)
+    record_tags = tag(config["Tag"], date_sec_for_TagNote, record_row)
+
+    record_notes = note(config["Note"], date_sec_for_TagNote, record_row)
+
+    with open("Table.csv","w") as f:
+        writer = csv.writer(f, delimiter = '\t')
+        writer.writerow(('Serial number of record','ID','Instrument','Prize', 'Px_fill', 'Side' ,'Volume init','Volume fill','Date','Status', 'Note', 'Tag'))
+        for i in zip(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags):
+            writer.writerow(i)
+
