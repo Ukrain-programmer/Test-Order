@@ -61,9 +61,10 @@ def get_transform_to_record(record_row, inform_record):
         transform.append(inform_record[i-1])
     return transform
 
-def get_transform_to_f3(list):
+def get_transform_to_f3(list, digits ):
+    param = '%.' + str(digits) + 'f'
     for i in range(len(list)):
-        list[i] = float('%.3f' % list[i])
+        list[i] = float(param % list[i])
     return list
 
 def psevdo_random(serial,a,c,m):
@@ -74,7 +75,6 @@ def psevdo_random(serial,a,c,m):
     return psevodo_number
 
 def id(random_id_order, serial_num_record, count_rec_before,count_rec_intime,count_order_before, count_order_intime):
-    #num = 0
     id = {num + 1: hex(random_id_order[num]) for num in range(len(random_id_order))}
     record_row = []
     id_record =[]
@@ -159,7 +159,7 @@ def instrument(serial_num_order,psevdo_random_low, dictionary_instrument, record
 
     px_fill_records = get_transform_to_record(record_row, px_fill_records)
 
-    px_fill_records = get_transform_to_f3(px_fill_records)
+    px_fill_records = get_transform_to_f3(px_fill_records, 3)
 
     return instrument_record_status, instrunent_record_prize, px_fill_records
 
@@ -177,7 +177,9 @@ def side(list_opt, record_row):
 
 def volum_init(volum_init_max, volum_init_min, psevdo_random_low, record_row):
     volum_for_order = []
-    psevdo_random_low = get_transform_to_f3(psevdo_random_low)
+
+    psevdo_random_low = get_transform_to_f3(psevdo_random_low, 5)
+    print(psevdo_random_low)
     for num in psevdo_random_low:
         volum_for_order.append(int(((volum_init_max - volum_init_min) * num + volum_init_min)/1000)*1000)
     volum_for_record = get_transform_to_record(record_row,volum_for_order)
@@ -276,8 +278,8 @@ if __name__ == '__main__':
     ID,record_row = id(random_order_id,serial_num_records,config['count_rec_before'],config['count_rec_intime'],config['count_order_before'], config['count_order_intime'])
 
 
-    low_random_records = get_low_random(psevdo_random(serial_num_records,1664525,1013904223,math.pow(2,32)),math.pow(2,32))
-    low_random_orders =  get_low_random(psevdo_random(serial_num_order,1664525,1013904223,math.pow(2,32)),math.pow(2,32))
+    low_random_records = get_transform_to_f3(get_low_random(psevdo_random(serial_num_records,1664525,1013904223,math.pow(2,32)),math.pow(2,32)),9)
+    low_random_orders =  get_transform_to_f3(get_low_random(psevdo_random(serial_num_order,1664525,1013904223,math.pow(2,32)),math.pow(2,32)),9)
     status_order,status_num_record,fill_status_num = status(serial_num_records,config['count_rec_before'],config['count_rec_intime'],
             config['count_order_before'],low_random_records, config['status_new'], config['status_inProcess'],
             config['status_Fill'], config['status_done'])
@@ -295,6 +297,7 @@ if __name__ == '__main__':
     record_tags = tag(config["Tag"], date_sec_for_TagNote, record_row)
 
     record_notes = note(config["Note"], date_sec_for_TagNote, record_row)
+
 
     with open("Table.csv","w") as f:
         writer = csv.writer(f, delimiter = '\t')
