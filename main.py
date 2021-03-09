@@ -2,7 +2,7 @@ from configparser import ConfigParser
 import csv
 import math
 from datetime import timedelta, datetime
-
+import mysql.connector
 def config_pars():
     file = 'config.ini'
     config = ConfigParser()
@@ -34,9 +34,7 @@ def get_dictionary_instrument(USDPLN, EURPLN, EURUSD, GBPUSD, USDCHF, USDJPY, EU
 
     return dictionary_instrument
 
-def init():
-    numberOforder = []
-    return numberOforder
+
 
 def get_num_of_status(to, list):
     done_list =[]
@@ -179,7 +177,6 @@ def volum_init(volum_init_max, volum_init_min, psevdo_random_low, record_row):
     volum_for_order = []
 
     psevdo_random_low = get_transform_to_f3(psevdo_random_low, 5)
-    print(psevdo_random_low)
     for num in psevdo_random_low:
         volum_for_order.append(int(((volum_init_max - volum_init_min) * num + volum_init_min)/1000)*1000)
     volum_for_record = get_transform_to_record(record_row,volum_for_order)
@@ -210,6 +207,10 @@ def volum_fill(low_random_orders, volum_init_order, volum_init_min, status_num_r
 
     return fill_volum_records
 
+def format_date(my_date):
+    (dt, micro) = my_date.strftime('%Y-%m-%d %H:%M:%S.%f').split('.')
+    dt = "%s.%03d" % (dt, int(micro) / 1000)
+    return dt
 
 def date(low_random_orders, record_row, status_num_record, date, low_random_records):
     sec_for_new =[]
@@ -221,12 +222,12 @@ def date(low_random_orders, record_row, status_num_record, date, low_random_reco
     msec_for_record= []
     date_init = datetime.strptime(date, "%d.%m.%y %H:%M:%S.%f")
     for num in range(len(low_random_orders)):
-        sec_for_new.append(int((3000 - 1)*low_random_orders[num] + 1))
-        sec_for_inProcess.append(int(((1000 + sec_for_new[num])-1)*low_random_orders[num] + sec_for_new[num] + 1))
-        sec_for_fill.append(int(((1000 + sec_for_inProcess[num])-1)*low_random_orders[num] + sec_for_inProcess[num] + 1))
-        sec_for_done.append(int(((1000 + sec_for_fill[num])-1)*low_random_orders[num] + sec_for_fill[num] + 1))
+        sec_for_new.append(int((1000 - 1)*low_random_orders[num] + 1))
+        sec_for_inProcess.append(int(((500 + sec_for_new[num])-1)*low_random_orders[num] + sec_for_new[num]))
+        sec_for_fill.append(int(((500 + sec_for_inProcess[num])-1)*low_random_orders[num] + sec_for_inProcess[num]))
+        sec_for_done.append(int(((500 + sec_for_fill[num])-1)*low_random_orders[num] + sec_for_fill[num]))
     for num in range(len(low_random_records)):
-        msec_for_record.append((int((3000 - 1)*low_random_records[num] + 1)))
+        msec_for_record.append((int((1000 - 1)*low_random_records[num] + 1)))
     sec_for_new_record = get_transform_to_record(record_row,sec_for_new)
     sec_for_inProcess_record = get_transform_to_record(record_row,sec_for_inProcess)
     sec_for_fill_record = get_transform_to_record(record_row,sec_for_fill)
@@ -236,13 +237,14 @@ def date(low_random_orders, record_row, status_num_record, date, low_random_reco
     date_sec_for_tag.append(sec_for_fill)
     date_sec_for_tag.append(sec_for_done)
     for num in range(len(low_random_records)):
+
         if status_num_record[num] == 1:
-            date_for_record.append(date_init+timedelta(seconds=sec_for_new_record[num],microseconds=msec_for_record[num]))
+            date_for_record.append((date_init+timedelta(seconds=sec_for_new_record[num],microseconds=msec_for_record[num]*1000)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
         elif status_num_record[num] == 2:
-            date_for_record.append(date_init + timedelta(seconds=sec_for_inProcess_record[num],microseconds=msec_for_record[num]))
+            date_for_record.append((date_init + timedelta(seconds=sec_for_inProcess_record[num],microseconds=msec_for_record[num]*1000)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
         elif status_num_record[num] == 3:
-            date_for_record.append(date_init + timedelta(seconds=sec_for_fill_record[num],microseconds=msec_for_record[num]))
-        else:  date_for_record.append(date_init+timedelta(seconds=sec_for_done_record[num], microseconds=msec_for_record[num]))
+            date_for_record.append((date_init + timedelta(seconds=sec_for_fill_record[num],microseconds=msec_for_record[num]*1000)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+        else:  date_for_record.append((date_init+timedelta(seconds=sec_for_done_record[num], microseconds=msec_for_record[num]*1000)).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
 
     return date_for_record, date_sec_for_tag
 
@@ -269,39 +271,104 @@ def note(list_note, date_sec_for_note, record_row):
 
     return get_transform_to_record(record_row,note_for_order)
 
-if __name__ == '__main__':
+
+def init():
 
     config = config_pars()
-    serial_num_order = serial_number(2000)                          #ID
-    random_order_id = psevdo_random(serial_num_order,106,1283,6075)
+    serial_num_order = serial_number(2000)  # ID
+    random_order_id = psevdo_random(serial_num_order, 106, 1283, 6075)
     serial_num_records = serial_number(7200)
-    ID,record_row = id(random_order_id,serial_num_records,config['count_rec_before'],config['count_rec_intime'],config['count_order_before'], config['count_order_intime'])
+    return config,serial_num_order, random_order_id, serial_num_records
+
+def work_flow(config,serial_num_order, random_order_id, serial_num_records):
+    ID, record_row = id(random_order_id, serial_num_records, config['count_rec_before'], config['count_rec_intime'],
+                        config['count_order_before'], config['count_order_intime'])
+
+    low_random_records = get_transform_to_f3(get_low_random(psevdo_random(serial_num_records, 22695477, 1, math.pow(2, 32)), math.pow(2, 32)), 9)
+    low_random_orders = get_transform_to_f3(get_low_random(psevdo_random(serial_num_order, 22695477, 1, math.pow(2, 32)), math.pow(2, 32)), 9)
+    status_order, status_num_record, fill_status_num = status(serial_num_records, config['count_rec_before'],
+                                                              config['count_rec_intime'],
+                                                              config['count_order_before'], low_random_records,
+                                                              config['status_new'], config['status_inProcess'],
+                                                              config['status_Fill'], config['status_done'])
+    instrument_record_status, instrunent_record_prize, px_fill_records = instrument(serial_num_order, low_random_orders,
+                                                                                    config['dictionary_instrument'],
+                                                                                    record_row)
+
+    side_status = side(config['Side'], record_row)
+
+    volum_init_record, volum_init_for_order = volum_init(config["Max_volum"], config["Min_volum"], get_low_random(
+        psevdo_random(serial_num_order, 106, 1283, 6075), 6075), record_row)
+    date_records, date_sec_for_TagNote = date(low_random_orders, record_row, status_num_record, config["Date"],
+                                              low_random_records)
+    low_random_orders = get_transform_to_f3(
+        get_low_random(psevdo_random(serial_num_order, 106, 1283, 6075), 6075), 9)
+    volum_fill_record = volum_fill(low_random_orders, volum_init_for_order, config["Min_volum"], status_num_record,
+                                   fill_status_num, volum_init_record, record_row)
 
 
-    low_random_records = get_transform_to_f3(get_low_random(psevdo_random(serial_num_records,1664525,1013904223,math.pow(2,32)),math.pow(2,32)),9)
-    low_random_orders =  get_transform_to_f3(get_low_random(psevdo_random(serial_num_order,1664525,1013904223,math.pow(2,32)),math.pow(2,32)),9)
-    status_order,status_num_record,fill_status_num = status(serial_num_records,config['count_rec_before'],config['count_rec_intime'],
-            config['count_order_before'],low_random_records, config['status_new'], config['status_inProcess'],
-            config['status_Fill'], config['status_done'])
-    instrument_record_status, instrunent_record_prize, px_fill_records=instrument(serial_num_order, low_random_orders,
-                        config['dictionary_instrument'],record_row)
-
-    side_status = side(config['Side'],record_row)
-
-    volum_init_record, volum_init_for_order = volum_init(config["Max_volum"],config["Min_volum"], get_low_random(psevdo_random(serial_num_order,106,1283,6075), 6075), record_row)
-
-    volum_fill_record = volum_fill(low_random_orders,volum_init_for_order, config["Min_volum"], status_num_record, fill_status_num, volum_init_record, record_row)
-
-    date_records,date_sec_for_TagNote = date(low_random_orders,record_row, status_num_record, config["Date"], low_random_records)
 
     record_tags = tag(config["Tag"], date_sec_for_TagNote, record_row)
 
     record_notes = note(config["Note"], date_sec_for_TagNote, record_row)
+    return serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags
 
 
-    with open("Table.csv","w") as f:
-        writer = csv.writer(f, delimiter = '\t')
-        writer.writerow(('Serial number of record','ID','Instrument','Prize', 'Px_fill', 'Side' ,'Volume init','Volume fill','Date','Status', 'Note', 'Tag'))
-        for i in zip(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags):
+def write_to_file(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags):
+    with open("Table.csv", "w") as f:
+        writer = csv.writer(f, delimiter='\t')
+        writer.writerow(('Serial number of record', 'ID', 'Instrument', 'Prize', 'Px_fill', 'Side', 'Volume init',
+                         'Volume fill', 'Date', 'Status', 'Note', 'Tag'))
+        for i in zip(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records,
+                     side_status, volum_init_record, volum_fill_record, date_records, status_order, record_notes,
+                     record_tags):
             writer.writerow(i)
+    return
+
+def create_BD():
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="work",
+        password="11Tittim"
+    )
+
+    mycursor = mydb.cursor()
+    mycursor.execute('CREATE DATABASE IF NOT EXISTS orders;USE orders;DROP TABLE IF EXISTS orders_history; CREATE TABLE orders_history (Serial_num_of_record INT, ID VARCHAR(10), Instrument VARCHAR(10), Px_Init DOUBLE, Px_Fill DOUBLE, Side VARCHAR(10), Volume_Init DOUBLE, Volume_Fill DOUBLE, Date DATETIME(3), Status VARCHAR(30), Note VARCHAR(255), Tags TEXT);')
+    mydb.commit()
+    mycursor.close()
+    return
+
+def write_to_BD():
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="work",
+        password="11Tittim"
+    )
+    flag = False
+    mycursor = mydb.cursor()
+    mycursor.execute('USE orders;')
+    with open('Table_sort.csv') as f:
+        reader = csv.reader(f)
+
+        mycursor.executemany(reader, [])
+        for row in reader:
+            if not flag:
+                flag = True
+                continue
+            mycursor.execute("INSERT INTO orders_history"
+                             "(Serial_num_of_record, ID, Instrument, Px_Init, Px_Fill, Side, Volume_Init, Volume_Fill, Date, Status, Note, Tags)"
+                             "VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", row)
+
+    mydb.commit()
+    mycursor.close()
+    return
+
+if __name__ == '__main__':
+    config, serial_num_order, random_order_id, serial_num_records =  init()
+    serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags = work_flow(config,serial_num_order, random_order_id, serial_num_records)
+    write_to_file(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags)
+    #create_BD()
+    write_to_BD()
+
+
 
