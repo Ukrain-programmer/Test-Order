@@ -74,6 +74,7 @@ def psevdo_random(serial,a,c,m):
 
 def id(random_id_order, serial_num_record, count_rec_before,count_rec_intime,count_order_before, count_order_intime):
     id = {num + 1: hex(random_id_order[num]) for num in range(len(random_id_order))}
+
     record_row = []
     id_record =[]
     id_before = []
@@ -92,6 +93,8 @@ def id(random_id_order, serial_num_record, count_rec_before,count_rec_intime,cou
         else:
             record_row.append(id_after[num])
             id_record.append(id[id_after[num]])
+            #print(serial_num_record)
+
     return id_record,record_row
 
 
@@ -125,10 +128,13 @@ def status(serial_num_record,count_rec_before, count_rec_intime ,count_order_bef
         elif status_row[num] == fill_num_status:
             status_record.append(statusFill[fill_status_num[num]])
         else: status_record.append(done)
-
+    # print(status_record)
+    # print(status_row)
+    # print(fill_status_num)
     return status_record, status_row, fill_status_num
 
 def instrument(serial_num_order,psevdo_random_low, dictionary_instrument, record_row):
+
     get_name_instrument = 0
     get_spred_instrument = 1
     get_prize_instrument = 2
@@ -165,12 +171,13 @@ def side(list_opt, record_row):
     buy_num_in_optlist = 0
     sell_num_in_optlist = 1
     status_side = get_num_of_status(5,get_low_random(psevdo_random(serial_num_order,1664525,1013904223,math.pow(2,32)),math.pow(2,32)))
+
     for i in range(len(status_side)):
         if status_side[i] % 2 == 0:
             status_side[i] = list_opt[buy_num_in_optlist]
         else: status_side[i] = list_opt[sell_num_in_optlist]
     status_side = get_transform_to_record(record_row, status_side)
-
+    #print(status_side)
     return status_side
 
 def volum_init(volum_init_max, volum_init_min, psevdo_random_low, record_row):
@@ -204,7 +211,7 @@ def volum_fill(low_random_orders, volum_init_order, volum_init_min, status_num_r
             elif fill_status_num[num] == 2:
                 fill_volum_records.append(0)
         num+=1
-
+    print(fill_volum_records)
     return fill_volum_records
 
 def format_date(my_date):
@@ -366,9 +373,9 @@ def write_to_BD():
 if __name__ == '__main__':
     config, serial_num_order, random_order_id, serial_num_records =  init()
     serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags = work_flow(config,serial_num_order, random_order_id, serial_num_records)
-    write_to_file(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags)
+    #write_to_file(serial_num_records, ID, instrument_record_status, instrunent_record_prize, px_fill_records, side_status, volum_init_record ,volum_fill_record, date_records, status_order, record_notes, record_tags)
     #create_BD()
-    write_to_BD()
+   # write_to_BD()
 
 
 
