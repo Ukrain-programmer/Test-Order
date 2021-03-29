@@ -103,18 +103,18 @@ class InitNumForGenerator:
 
 class IGenerator(ABC):
     @abstractmethod
-    def getData(self):
+    def getData(self) -> list:
         pass
 
 class ID(IGenerator):
     list_of_id_record =None
-    def __init__(self):
+    def __init__(self, config):
         self.serial_number_list = [num + 1 for num in range(7200)]
         self.init_num = InitNumForGenerator(2000, 106, 1283, 6075)
         self.id = None
         self.record_row = []
         self.id_record = []
-        self.config = Config()
+        self.config = config
         self.calc_ID()
 
     def __id_hex(self):
@@ -143,8 +143,8 @@ class ID(IGenerator):
         return self.record_row
 
 class Status(IGenerator):
-    def __init__(self):
-        config = Config()
+    def __init__(self, config):
+        config = config
         self.init = InitNumForGenerator(7200,22695477, 1, math.pow(2, 32))
         self.serial_number_list = [num + 1 for num in range(7200)]
         self.status_row = []
@@ -196,15 +196,14 @@ class Status(IGenerator):
 
 class Instrument(IGenerator):
 
-    def __init__(self):
+    def __init__(self, config, id):
         self.init = InitNumForGenerator(2000,22695477, 1, math.pow(2, 32))
-        id = ID()
         self.record_row = id.get_record_row()
         self.serial_number = 2000
         self.instrument_record_status = None
         self.instrunent_record_prize = None
         self.px_fill_records = []
-        self.config = Config()
+        self.config = config
         self.procces()
 
     def procces(self):
@@ -265,8 +264,8 @@ class Instrument(IGenerator):
 
 class Side(IGenerator):
 
-    def __init__(self):
-        config = Config()
+    def __init__(self, config, id):
+        config = config
         self.init = InitNumForGenerator(2000, 1664525, 1013904223, math.pow(2, 32))
         self.list_opt = config.getByName('Side')
         self.record_row = id.get_record_row()
@@ -303,9 +302,8 @@ class Side(IGenerator):
 
 class Volum_init(IGenerator):
 
-    def __init__(self):
-        config = Config()
-        id = ID()
+    def __init__(self, config, id):
+        config = config
         self.record_row = id.get_record_row()
         self.init = InitNumForGenerator(2000, 106, 1283, 6075)
         self.volum_init_max = config.getByName("Max_volum")
@@ -410,7 +408,7 @@ class Date(IGenerator):
         low_random_orders = self.init_order.get_psevdo_random_transform_f_list(9)
         low_random_records = self.init_record.get_psevdo_random_transform_f_list(9)
         status_num_record = self.status.get_status_row()
-        date = config.getByName("Date")
+        date = self.config.getByName("Date")
         sec_for_new = []
         sec_for_inProcess = []
         sec_for_fill = []
@@ -530,8 +528,15 @@ class Note(IGenerator):
         return transform
 
 # if __name__ == '__main__':
-#     id = ID()
 #     config = Config()
+#     id = ID(config)
+#    print(id.getData())
+#     instrum = Instrument(config,id)
+#     a, b, c = instrum.getData()
+#     print(a)
+#     print(b)
+#     print(c)
+#    print(instrum.getData())
 #     status = Status()
 #     volum_init = Volum_init()
 #     volum = Volum_fill(config,volum_init,status,id)
@@ -540,7 +545,6 @@ class Note(IGenerator):
 #     note = Note(config,date,id)
 #     print(note.getData())
 #     print(len(note.getData()))
-#     # instrument = Instrument()
-#     # a, b, c = instrument.getData()
+#     instrument = Instrument()
 #     side = Side()
-#    # print(side.getData())
+#    print(side.getData())
