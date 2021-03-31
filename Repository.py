@@ -1,6 +1,6 @@
 import csv
 
-class DataMaping:
+class Dto:
     def __init__(self, id, instrument, px_init, px_fill, site, volume_init, volum_fill, data, status, note, tag):
         self.id = id
         self.instrument = instrument
@@ -19,7 +19,7 @@ class DataMaping:
 class Repository:
     dictionary_of_record = None
 
-    def set_to_dictionary(self, dto: DataMaping):
+    def set_to_dictionary(self, dto: Dto):
         self.dictionary_of_record = {'ID': dto.id, 'Instrument': dto.instrument, 'Px_init': dto.px_init, 'Px_fill': dto.px_fill,'Site': dto.site, 'Volume_init': dto.volume_init,
                                      'Volume_fill': dto.volum_fill, 'Date': dto.date, 'Status': dto.status, 'Note': dto.note, 'Tag': dto.tag}
 

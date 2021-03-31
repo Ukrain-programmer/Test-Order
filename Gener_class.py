@@ -5,12 +5,13 @@ from datetime import timedelta, datetime
 class Config:
     config_dic = None
 
-
-    def __init__(self):
+    def __init__(self, name):
+        self.file_name = name
         self.pars_file()
 
+
     def pars_file(self):
-        file = 'config.ini'
+        file = self.file_name
         config = ConfigParser()
         try:
             config.read(file)

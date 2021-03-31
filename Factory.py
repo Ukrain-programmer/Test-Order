@@ -2,25 +2,26 @@ from Gener_class import *
 from Repository import *
 
 class Factory:
+    dto : Dto
 
-    def call_builder_record(self):
-        repository = Repository()
-        build = Builder_record(repository)
+    def __init__(self, repository, config):
+        self.config = config
+        self.repository = repository
+
+    def call_builder_record(self,):
+        build = Builder_record(self.repository, self.config)
         build.build()
-        build.get_dto_to_reposetiry()
+        self.dto = build.get_result()
+        self.__get_dto_to_reposetiry()
 
-
-
-
-
-
+    def __get_dto_to_reposetiry(self):
+        self.repository.set_to_dictionary(self.dto)
+        self.repository.to_file_csv()
 
 
 class Builder_record:
-
-    def __init__(self, repository :Repository):
-        self.repository = repository
-        self.config = Config()
+    def __init__(self, repository :Repository, config):
+        self.config = config
         self.id = ID(self.config)
         self.instrument = Instrument(self.config, self.id)
         self.px_init = None
@@ -44,13 +45,18 @@ class Builder_record:
         self.note = self.note.getData()
         self.tag = self.tag.getData()
 
-    def get_dto_to_reposetiry(self):
-        dto = DataMaping(self.id ,self.instrument ,self.px_init ,self.px_fill ,self.site ,self.volume_init, self.volum_fill, self.date ,self.status ,self.note ,self.tag)
-        self.repository.set_to_dictionary(dto)
-        self.repository.to_file_csv()
+    def get_result(self):
+        return Dto(self.id ,self.instrument ,self.px_init ,self.px_fill ,self.site ,self.volume_init, self.volum_fill, self.date ,self.status ,self.note ,self.tag)
+
+class Init:
+
+    def get_init_config(self, file):
+        return Config(file)
 
 
 if __name__ == '__main__':
-    factory = Factory()
+    init = Init()
+    repository = Repository()
+    factory = Factory(repository, init.get_init_config('config.ini'))
     factory.call_builder_record()
 
