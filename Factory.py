@@ -2,25 +2,20 @@ from Gener_class import *
 from Repository import *
 
 class Factory:
-    dto : Dto
-
-    def __init__(self, repository, config):
+    def __init__(self, config):
         self.config = config
-        self.repository = repository
 
-    def call_builder_record(self,):
-        build = Builder_record(self.repository, self.config)
+    def call_builder_record(self) -> Dto:
+        build = Builder_record(self.config)
         build.build()
-        self.dto = build.get_result()
-        self.__get_dto_to_reposetiry()
+        dto = build.get_result()
+        return dto
 
-    def __get_dto_to_reposetiry(self):
-        self.repository.set_to_dictionary(self.dto)
-        self.repository.to_file_csv()
+
 
 
 class Builder_record:
-    def __init__(self, repository :Repository, config):
+    def __init__(self, config):
         self.config = config
         self.id = ID(self.config)
         self.instrument = Instrument(self.config, self.id)
@@ -57,6 +52,8 @@ class Init:
 if __name__ == '__main__':
     init = Init()
     repository = Repository()
-    factory = Factory(repository, init.get_init_config('config.ini'))
-    factory.call_builder_record()
+    factory = Factory(init.get_init_config('config.ini'))
+    dto = factory.call_builder_record()
+    repository.set_to_dictionary(dto)
+    repository.to_file_csv()
 

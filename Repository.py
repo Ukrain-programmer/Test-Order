@@ -58,6 +58,10 @@ class Repository:
         mycursor.close()
 
 
+    def get_record(self):
+        return self.dictionary_of_record
+
+
     def create_DB(self):
         mydb = mysql.connector.connect(
             host="localhost",
